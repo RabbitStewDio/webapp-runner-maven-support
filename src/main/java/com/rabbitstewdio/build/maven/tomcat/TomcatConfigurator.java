@@ -45,7 +45,26 @@ public class TomcatConfigurator extends AsyncTomcatResource {
     CommandLineParams params = new CommandLineParams();
     params.port = port;
     params.enableNaming = true;
-
+    params.tomcatUsersLocation =
+            configuration.getConfiguration().getProperty("userDatabaseLocation", params.tomcatUsersLocation);
+    params.uriEncoding =
+            configuration.getConfiguration().getProperty("uriEncoding", params.uriEncoding);
+    params.enableCompression = Boolean.parseBoolean
+            (configuration.getConfiguration().getProperty("enableCompression", String.valueOf(params.enableCompression)));
+    params.enableSSL = Boolean.parseBoolean
+            (configuration.getConfiguration().getProperty("enableSSL", String.valueOf(params.enableSSL)));
+    params.enableNaming = Boolean.parseBoolean
+            (configuration.getConfiguration().getProperty("enableNaming", String.valueOf(params.enableNaming)));
+    params.enableClientAuth = Boolean.parseBoolean
+            (configuration.getConfiguration().getProperty("enableClientAuth", String.valueOf(params.enableClientAuth)));
+    params.enableBasicAuth = Boolean.parseBoolean
+            (configuration.getConfiguration().getProperty("enableBasicAuth", String.valueOf(params.enableBasicAuth)));
+    params.expandWar = Boolean.parseBoolean
+            (configuration.getConfiguration().getProperty("expandWar", String.valueOf(params.expandWar)));
+    params.sessionTimeout = Integer.parseInt
+            (configuration.getConfiguration().getProperty("sessionTimeout", String.valueOf(params.sessionTimeout)));
+    params.compressableMimeTypes =
+            configuration.getConfiguration().getProperty("compressableMimeTypes", params.compressableMimeTypes);
     ContextDefinition[] contextDefinition = configure();
     return startServer(params, contextDefinition);
   }
@@ -81,7 +100,9 @@ public class TomcatConfigurator extends AsyncTomcatResource {
     ctx.setPath("");
     ctx.setDocBase(getDocBase());
     ctx.addLifecycleListener(new Tomcat.DefaultWebXmlListener());
-    ctx.setParentClassLoader(configuration.getProjectClassLoader());
+
+    ClassLoader projectClassLoader = configuration.getProjectClassLoader();
+    ctx.setParentClassLoader(projectClassLoader);
 
     ContextConfig config = new ContextConfig();
     config.setDefaultWebXml(Constants.NoDefaultWebXml);
@@ -92,12 +113,10 @@ public class TomcatConfigurator extends AsyncTomcatResource {
     servlet.setLoadOnStartup(1);
     servlet.setOverridable(true);
 
-    Wrapper webjar = Tomcat.addServlet(ctx, "webjar",
-            new WebJarServlet(configuration.getProjectClassLoader(), getLog()));
+    Wrapper webjar = Tomcat.addServlet(ctx, "webjar", new WebJarServlet(projectClassLoader, getLog()));
     webjar.setLoadOnStartup(1);
 
-    Wrapper cp = Tomcat.addServlet(ctx, "classpath",
-            new ClasspathServlet(configuration.getProjectClassLoader(), getLog()));
+    Wrapper cp = Tomcat.addServlet(ctx, "classpath", new ClasspathServlet(projectClassLoader, getLog()));
     cp.setLoadOnStartup(1);
 
     ctx.addServletMapping("/", "defaultContent");
